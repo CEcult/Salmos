@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e0c09" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#faf8f4" media="(prefers-color-scheme: light)">
+<title>Salmos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────────── */
+:root {
+  --gold:      #c9a84c;
+  --gold-lt:   #e8c97a;
+  --gold-glow: rgba(201,168,76,.16);
+  --bg:        #faf8f4;
+  --bg2:       #f2ede3;
+  --bg3:       #e9e2d4;
+  --card:      #ffffff;
+  --border:    #ddd5be;
+  --border2:   #ece5d5;
+  --txt:       #1a1714;
+  --txt2:      #5c5040;
+  --txt3:      #9a8d78;
+  --tab-h:     60px;
+  --bar-h:     56px;
+  --safe-b:    env(safe-area-inset-bottom, 0px);
+  --safe-t:    env(safe-area-inset-top, 0px);
+  --sh:        0 2px 20px rgba(0,0,0,.07);
+  --sh2:       0 8px 40px rgba(0,0,0,.13);
+  --r:         14px;
+  --r-sm:      9px;
+}
+[data-theme="dark"] {
+  --bg:    #0e0c09; --bg2: #171410; --bg3: #211d14;
+  --card:  #1c1910; --border: #342c1c; --border2: #261e12;
+  --txt:   #f0e8d0; --txt2: #bfaa84; --txt3: #7a6e52;
+  --sh:    0 2px 20px rgba(0,0,0,.45);
+  --sh2:   0 8px 40px rgba(0,0,0,.65);
+}
+
+/* ─── RESET ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; width: 100%; overflow: hidden; overscroll-behavior: none; }
+body {
+  background: var(--bg); color: var(--txt);
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-weight: 300; line-height: 1.8;
+  transition: background .3s, color .3s;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+input, textarea { font-family: inherit; }
+::selection { background: rgba(201,168,76,.28); }
+
+/* ─── APP SHELL ──────────────────────────────── */
+#app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  padding-top: var(--safe-t);
+}
+
+/* ─── TOP BAR ────────────────────────────────── */
+.topbar {
+  height: var(--bar-h); flex-shrink: 0;
+  background: var(--bg); border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center; padding: 0 1rem; gap: .6rem;
+  position: relative; z-index: 10;
+  transition: background .3s, border-color .3s;
+}
+.topbar-title {
+  font-family: 'Cinzel', serif; font-size: .95rem;
+  letter-spacing: .12em; color: var(--gold);
+  flex: 1; text-align: center;
+}
+.topbar-back, .topbar-side {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--gold); font-size: 1.2rem;
+  transition: background .15s;
+}
+.topbar-side { color: var(--txt2); font-size: 1rem; }
+.topbar-back:active, .topbar-side:active { background: var(--gold-glow); }
+
+/* ─── SCREENS ────────────────────────────────── */
+.screens { flex: 1; overflow: hidden; position: relative; }
+.screen {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  background: var(--bg);
+  transition: transform .32s cubic-bezier(.4,0,.2,1), opacity .28s ease;
+  will-change: transform;
+}
+.screen[data-state="active"] { transform: translateX(0);    opacity: 1; pointer-events: auto; }
+.screen[data-state="behind"] { transform: translateX(-30%); opacity: .4; pointer-events: none; }
+.screen[data-state="ahead"]  { transform: translateX(100%); opacity: 1; pointer-events: none; }
+.screen[data-state="hidden"] { transform: translateX(100%); opacity: 0; pointer-events: none; }
+.screen::-webkit-scrollbar { width: 4px; }
+.screen::-webkit-scrollbar-track { background: transparent; }
+.screen::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ─── TAB BAR ────────────────────────────────── */
+.tabbar {
+  height: calc(var(--tab-h) + var(--safe-b));
+  padding-bottom: var(--safe-b); flex-shrink: 0;
+  background: var(--bg); border-top: 1px solid var(--border2);
+  display: flex; align-items: stretch; z-index: 10;
+  transition: background .3s, border-color .3s;
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  color: var(--txt3); font-family: 'Cinzel', serif;
+  font-size: .56rem; letter-spacing: .1em;
+  transition: color .18s; position: relative;
+}
+.tab.active { color: var(--gold); }
+.tab-icon { font-size: 1.3rem; line-height: 1; }
+.tab-label { text-transform: uppercase; }
+.tab.active::after {
+  content: ''; position: absolute; top: 6px;
+  width: 4px; height: 4px; background: var(--gold); border-radius: 50%;
+}
+
+/* ─── HOME SCREEN ────────────────────────────── */
+.home-hero {
+  padding: 2.2rem 1.5rem 1.4rem;
+  text-align: center; position: relative;
+}
+.home-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,.13) 0%, transparent 68%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .3em;
+  color: var(--gold); opacity: .75; text-transform: uppercase; margin-bottom: .9rem;
+}
+.hero-h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.8rem, 8vw, 2.8rem);
+  font-weight: 400; color: var(--txt); letter-spacing: .06em;
+  line-height: 1.15; margin-bottom: .85rem;
+}
+.hero-h1 em { color: var(--gold); font-style: normal; }
+.hero-verse {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: .95rem; color: var(--txt3); line-height: 1.65;
+  max-width: 320px; margin: 0 auto;
+}
+.hero-divider {
+  margin: 1.3rem auto 0;
+  display: flex; align-items: center; gap: .7rem;
+  color: var(--gold); opacity: .35; font-size: .8rem; letter-spacing: .35em;
+}
+.hero-divider::before, .hero-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--gold); opacity: .4;
+}
+
+/* Search */
+.search-bar { margin: .6rem 1.2rem 1.2rem; position: relative; }
+.search-bar input {
+  width: 100%; background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 50px; padding: .65rem 1rem .65rem 2.6rem;
+  font-size: .9rem; color: var(--txt); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-bar input::placeholder { color: var(--txt3); font-style: italic; }
+.search-bar input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+.search-icon {
+  position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+  color: var(--txt3); font-size: 1rem; pointer-events: none;
+}
+.search-clear {
+  position: absolute; right: .85rem; top: 50%; transform: translateY(-50%);
+  width: 22px; height: 22px; background: var(--bg3); border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  color: var(--txt3); font-size: .7rem;
+}
+.search-clear.on { display: flex; }
+
+/* Recents */
+.recent-row {
+  padding: 0 1.2rem .6rem;
+  display: none; flex-wrap: wrap; gap: .4rem; align-items: center;
+}
+.recent-row.on { display: flex; }
+.recent-label {
+  font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .18em;
+  color: var(--txt3); text-transform: uppercase; width: 100%;
+}
+.r-chip {
+  padding: .25rem .7rem; background: var(--bg2);
+  border: 1px solid var(--border2); border-radius: 20px;
+  font-family: 'Cinzel', serif; font-size: .62rem; color: var(--txt2);
+  transition: all .15s;
+}
+.r-chip:active { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); }
+
+/* Grid */
+.sec-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .5rem 1.2rem;
+}
+.sec-label {
+  font-family: 'Cinzel', serif; font-size: .62rem;
+  letter-spacing: .18em; color: var(--txt3); text-transform: uppercase;
+}
+.sec-count { font-family: 'Cinzel', serif; font-size: .6rem; color: var(--txt3); }
+
+.psalm-grid {
+  display: grid; grid-template-columns: repeat(10, 1fr);
+  gap: 4px; padding: 0 1rem 2rem;
+}
+@media (min-width: 480px)  { .psalm-grid { grid-template-columns: repeat(12, 1fr); } }
+@media (min-width: 640px)  { .psalm-grid { grid-template-columns: repeat(15, 1fr); } }
+@media (min-width: 900px)  { .psalm-grid { grid-template-columns: repeat(20, 1fr); } }
+@media (min-width: 1200px) { .psalm-grid { grid-template-columns: repeat(25, 1fr); } }
+
+.pgn {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 7px; font-family: 'Cinzel', serif; font-size: .62rem;
+  transition: all .14s;
+}
+.pgn.avail {
+  color: var(--txt); background: var(--card);
+  border: 1px solid var(--border2);
+}
+.pgn.avail:active { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); transform: scale(.92); }
+.pgn.none { color: var(--border); border: 1px solid transparent; pointer-events: none; }
+
+/* Search results */
+.results-list { padding: 0 1rem 2rem; }
+.res-item {
+  padding: .85rem .9rem; background: var(--card);
+  border: 1px solid var(--border2); border-radius: var(--r-sm);
+  margin-bottom: .5rem; transition: background .13s;
+}
+.res-item:active { background: var(--gold-glow); border-color: var(--gold); }
+.res-num { font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .08em; color: var(--gold); margin-bottom: .2rem; }
+.res-preview { font-size: .83rem; color: var(--txt2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.res-preview mark { background: rgba(201,168,76,.3); border-radius: 2px; padding: 0 1px; color: var(--txt); }
+.res-none { text-align: center; padding: 3rem 1rem; color: var(--txt3); font-style: italic; font-size: .9rem; }
+
+/* ─── READER SCREEN ──────────────────────────── */
+.reader-nav { display: flex; gap: .35rem; }
+.rnav {
+  height: 30px; padding: 0 .65rem; border: 1px solid var(--border);
+  border-radius: 20px; font-family: 'Cinzel', serif;
+  font-size: .58rem; letter-spacing: .06em; color: var(--txt2); transition: all .14s;
+}
+.rnav:active { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+.rnav:disabled { opacity: .25; pointer-events: none; }
+
+/* Psalm card */
+.psalm-card {
+  margin: 1rem; padding: 1.5rem 1.4rem 1.25rem;
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: var(--r); box-shadow: var(--sh);
+}
+@media (min-width: 640px) { .psalm-card { margin: 1.5rem auto; max-width: 640px; padding: 2rem 2.2rem 1.75rem; } }
+@media (min-width: 900px) { .psalm-card { max-width: 720px; } }
+
+.psalm-num-big {
+  font-family: 'Cinzel', serif; font-size: 3.5rem; font-weight: 400;
+  line-height: 1; color: var(--gold); opacity: .28;
+  letter-spacing: -.02em; margin-bottom: .3rem;
+}
+.psalm-title {
+  font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 500;
+  color: var(--txt); letter-spacing: .07em; line-height: 1.4; margin-bottom: .3rem;
+}
+.psalm-note { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: .88rem; color: var(--txt3); }
+.psalm-divider { height: 1px; background: var(--border2); margin: 1.1rem 0; }
+
+.verse { display: flex; gap: .75rem; margin-bottom: .45rem; align-items: baseline; }
+.vnum { font-family: 'Cinzel', serif; font-size: .6rem; color: var(--gold); min-width: 1.3rem; text-align: right; flex-shrink: 0; opacity: .65; padding-top: .38rem; }
+.vtext { font-size: .97rem; color: var(--txt); line-height: 1.9; font-weight: 300; }
+.vtext mark { background: rgba(201,168,76,.28); border-radius: 2px; padding: 0 2px; color: var(--txt); }
+
+/* Action row */
+.psalm-acts {
+  display: flex; gap: .5rem; flex-wrap: wrap;
+  margin-top: 1.1rem; padding-top: 1rem;
+  border-top: 1px solid var(--border2);
+}
+.pact {
+  flex: 1; min-width: 0; height: 38px;
+  display: flex; align-items: center; justify-content: center; gap: .35rem;
+  border: 1.5px solid var(--border); border-radius: 50px;
+  font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .08em; color: var(--txt2);
+  transition: all .15s;
+}
+.pact:active { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+.pact.fav-on { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+
+/* Bottom psalm nav */
+.psalm-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .5rem 1rem .8rem;
+}
+@media (min-width: 640px) { .psalm-nav { max-width: 640px; margin: 0 auto; } }
+.pnav-btn {
+  display: flex; align-items: center; gap: .4rem;
+  font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .08em; color: var(--txt3);
+  padding: .5rem .75rem; border-radius: var(--r-sm); transition: all .15s;
+}
+.pnav-btn:active { background: var(--gold-glow); color: var(--gold); }
+.pnav-btn:disabled { opacity: .2; pointer-events: none; }
+.pnav-dots { color: var(--gold); opacity: .35; font-size: .8rem; letter-spacing: .35em; }
+
+/* ─── ACCORDION SECTION CARDS ────────────────── */
+.section-card {
+  margin: 0 1rem 1rem;
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: var(--r); overflow: hidden;
+}
+@media (min-width: 640px) { .section-card { margin: 0 auto 1rem; max-width: 640px; } }
+@media (min-width: 900px) { .section-card { max-width: 720px; } }
+
+.sec-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .9rem 1.1rem; background: var(--bg2);
+  border-bottom: 1px solid transparent;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: background .15s;
+}
+.sec-card-header:active { background: var(--bg3); }
+.section-card.open .sec-card-header { border-bottom-color: var(--border2); }
+.sec-card-left { display: flex; align-items: center; gap: .6rem; }
+.sec-card-icon { font-size: 1rem; }
+.sec-card-title {
+  font-family: 'Cinzel', serif; font-size: .75rem;
+  letter-spacing: .1em; color: var(--txt);
+}
+.sec-card-badge {
+  font-family: 'Cinzel', serif; font-size: .55rem; letter-spacing: .08em;
+  color: var(--gold); background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,.3); border-radius: 20px; padding: .15rem .5rem;
+}
+.sec-card-chevron { font-size: .72rem; color: var(--txt3); transition: transform .22s; }
+.section-card.open .sec-card-chevron { transform: rotate(180deg); }
+
+.sec-card-body { display: none; padding: 1.1rem; }
+.section-card.open .sec-card-body { display: block; }
+
+/* ─── REFLECTION TABS ────────────────────────── */
+.ref-tabs {
+  display: flex; gap: 4px; background: var(--bg2);
+  border-radius: 8px; padding: 3px; margin-bottom: 1.1rem;
+}
+.ref-tab {
+  flex: 1; padding: .45rem; border-radius: 6px;
+  font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .08em;
+  color: var(--txt3); transition: all .18s;
+}
+.ref-tab.active {
+  background: var(--card); color: var(--gold);
+  box-shadow: 0 1px 6px rgba(0,0,0,.1);
+}
+
+/* Reflection body text */
+.ref-panel { display: none; }
+.ref-panel.on { display: block; }
+
+.ref-tradition-label {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .14em;
+  color: var(--gold); text-transform: uppercase; opacity: .75;
+  margin-bottom: .85rem;
+}
+.ref-tradition-label::before, .ref-tradition-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--gold); opacity: .3; width: 20px;
+}
+
+.ref-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.02rem; line-height: 1.85; color: var(--txt2);
+}
+.ref-text p { margin-bottom: .85rem; }
+.ref-text p:last-child { margin-bottom: 0; }
+.ref-text strong { color: var(--txt); font-weight: 600; }
+.ref-text em { color: var(--gold-lt); font-style: italic; }
+
+/* verse pull-quote */
+.ref-quote {
+  margin: .85rem 0; padding: .75rem 1rem;
+  border-left: 3px solid var(--gold); background: var(--bg2);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: 1rem; color: var(--txt2); line-height: 1.7;
+}
+
+/* ─── NOTES CARD ─────────────────────────────── */
+.notes-area {
+  width: 100%; min-height: 120px;
+  background: transparent; border: none; outline: none; resize: none;
+  font-family: 'Source Serif 4', serif; font-size: .92rem;
+  font-weight: 300; line-height: 1.8; color: var(--txt); padding: 0;
+}
+.notes-area::placeholder { color: var(--txt3); font-style: italic; }
+.notes-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--border2);
+}
+.notes-chars { font-size: .72rem; color: var(--txt3); }
+.notes-btns { display: flex; gap: .4rem; }
+.notes-clear {
+  height: 32px; padding: 0 .75rem; border: 1px solid var(--border);
+  border-radius: 20px; font-size: .75rem; color: var(--txt3); transition: all .15s;
+}
+.notes-clear:active { border-color: #e05252; color: #e05252; }
+.notes-save {
+  display: flex; align-items: center; gap: .3rem; height: 32px; padding: 0 .9rem;
+  background: var(--gold); border-radius: 20px; font-family: 'Cinzel', serif;
+  font-size: .62rem; letter-spacing: .06em; color: #0e0c09; transition: all .15s;
+}
+.notes-save:active { background: var(--gold-lt); transform: scale(.96); }
+.notes-save.saved { background: var(--bg3); color: var(--txt3); }
+
+/* ─── FAVORITES SCREEN ───────────────────────── */
+.fav-empty { text-align: center; padding: 4rem 2rem; color: var(--txt3); }
+.fav-empty-icon { font-size: 2.5rem; margin-bottom: .75rem; opacity: .4; }
+.fav-empty-txt { font-style: italic; font-size: .9rem; line-height: 1.6; }
+.fav-list { padding: .5rem 1rem 2rem; }
+.fav-item {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .9rem 1rem; background: var(--card);
+  border: 1px solid var(--border2); border-radius: var(--r-sm);
+  margin-bottom: .5rem; transition: background .13s;
+}
+.fav-item:active { background: var(--gold-glow); border-color: var(--gold); }
+.fav-icon { font-size: 1.1rem; color: var(--gold); flex-shrink: 0; }
+.fav-info { flex: 1; min-width: 0; }
+.fav-name { font-family: 'Cinzel', serif; font-size: .75rem; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-sub { font-size: .78rem; color: var(--txt3); }
+.fav-rm {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg2); color: var(--txt3); font-size: .75rem; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; transition: all .14s;
+}
+.fav-rm:active { background: rgba(224,82,82,.15); color: #e05252; }
+
+/* ─── SETTINGS SCREEN ────────────────────────── */
+.settings-list { padding: .75rem 1rem 2rem; }
+.settings-section { margin-bottom: 1.5rem; }
+.settings-section-label {
+  font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .2em;
+  color: var(--txt3); text-transform: uppercase; padding: 0 .4rem .5rem;
+}
+.setting-row {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .9rem 1rem; background: var(--card);
+  border: 1px solid var(--border2); border-radius: var(--r-sm);
+  margin-bottom: .4rem; transition: background .13s;
+}
+.setting-row:active { background: var(--bg2); }
+.setting-icon { font-size: 1.1rem; flex-shrink: 0; color: var(--gold); }
+.setting-info { flex: 1; }
+.setting-name { font-size: .9rem; color: var(--txt); }
+.setting-desc { font-size: .75rem; color: var(--txt3); }
+.toggle { width: 44px; height: 26px; background: var(--bg3); border-radius: 13px; position: relative; transition: background .2s; flex-shrink: 0; }
+.toggle.on { background: var(--gold); }
+.toggle::after { content: ''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform .2s; }
+.toggle.on::after { transform: translateX(18px); }
+.fontsize-ctrl { display: flex; align-items: center; gap: .6rem; }
+.fs-btn { width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 50%; color: var(--txt2); display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all .14s; }
+.fs-btn:active { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+.fs-val { font-family: 'Cinzel', serif; font-size: .75rem; color: var(--txt2); min-width: 2rem; text-align: center; }
+
+/* ─── SHARE SHEET ────────────────────────────── */
+.sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; opacity: 0; visibility: hidden; transition: opacity .28s; }
+.sheet-overlay.on { opacity: 1; visibility: visible; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-radius: 20px 20px 0 0; padding: 0 1.2rem calc(1.5rem + var(--safe-b)); box-shadow: 0 -8px 40px rgba(0,0,0,.18); z-index: 201; transform: translateY(100%); transition: transform .32s cubic-bezier(.4,0,.2,1); }
+.sheet.on { transform: translateY(0); }
+.sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: .8rem auto 1.25rem; }
+.sheet-title { font-family: 'Cinzel', serif; font-size: .82rem; letter-spacing: .1em; color: var(--gold); margin-bottom: 1rem; }
+.sheet-url { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+.sheet-url input { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .85rem; font-size: .82rem; color: var(--txt2); outline: none; }
+.btn-gold { padding: .6rem 1rem; background: var(--gold); border-radius: 8px; color: #0e0c09; font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .06em; transition: background .15s; white-space: nowrap; }
+.btn-gold:active { background: var(--gold-lt); }
+
+/* ─── TOAST ──────────────────────────────────── */
+.toast { position: fixed; bottom: calc(var(--tab-h) + var(--safe-b) + .75rem); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--gold); border-radius: 8px; padding: .6rem 1.1rem; font-size: .82rem; color: var(--txt); box-shadow: var(--sh2); opacity: 0; transition: all .25s; z-index: 300; pointer-events: none; white-space: nowrap; }
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── ANIMATIONS ─────────────────────────────── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+.psalm-card, .section-card { animation: fadeUp .3s ease both; }
+.section-card:nth-child(2) { animation-delay: .06s; }
+.section-card:nth-child(3) { animation-delay: .12s; }
+
+/* ─── LARGE SCREEN ───────────────────────────── */
+@media (min-width: 900px) {
+  #app { flex-direction: row; }
+  .topbar { display: none; }
+  .tabbar { width: 220px; height: auto; flex-direction: column; border-top: none; border-right: 1px solid var(--border2); padding: 2rem 0; order: -1; justify-content: flex-start; }
+  .tab { flex: none; width: 100%; flex-direction: row; gap: .7rem; padding: .75rem 1.5rem; justify-content: flex-start; font-size: .68rem; }
+  .tab-icon { font-size: 1.1rem; }
+  .tab.active::after { top: 50%; left: 6px; transform: translateY(-50%); width: 3px; height: 24px; border-radius: 2px; }
+  .tabbar::before { content: '✦ SALMOS'; font-family: 'Cinzel', serif; font-size: .9rem; letter-spacing: .14em; color: var(--gold); padding: 0 1.5rem 1.5rem; border-bottom: 1px solid var(--border2); margin-bottom: 1rem; display: block; }
+  .screens { flex: 1; }
+}
+
+/* ═══════════════════════════════════════════════
+   SPLASH / ENTRADA
+═══════════════════════════════════════════════ */
+#splash {
+  position: fixed; inset: 0; z-index: 999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: var(--bg);
+  padding: 2rem 1.5rem;
+  transition: background .3s;
+}
+#splash::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%,
+    rgba(201,168,76,.11) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── ring ── */
+.sp-ring {
+  position: relative;
+  width: 168px; height: 168px;
+  margin-bottom: 2.4rem;
+  flex-shrink: 0;
+}
+.sp-ring svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0;
+  animation: spFadeIn 1.6s cubic-bezier(.4,0,.2,1) .25s forwards;
+}
+.sp-ring-spin {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px dashed rgba(201,168,76,.32);
+  opacity: 0;
+  animation: spFadeIn 1.2s ease .55s forwards,
+             spSpin 44s linear 1.8s infinite;
+}
+.sp-mono {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.sp-mono-star {
+  font-size: 2rem; line-height: 1; color: var(--gold);
+  opacity: 0; transform: translateY(8px) scale(.9);
+  animation: spRise 1s cubic-bezier(.33,1,.68,1) .85s forwards;
+}
+.sp-mono-label {
+  margin-top: .4rem;
+  font-family: 'Cinzel', serif; font-size: .52rem;
+  letter-spacing: .38em; color: var(--txt3);
+  text-transform: uppercase;
+  opacity: 0; transform: translateY(6px);
+  animation: spFadeUp .9s ease 1.25s forwards;
+}
+
+/* ── text block ── */
+.sp-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 400; letter-spacing: .1em; line-height: 1;
+  color: var(--txt);
+  opacity: 0; transform: translateY(14px);
+  animation: spRise 1.1s cubic-bezier(.33,1,.68,1) 1.05s forwards;
+}
+.sp-title em { color: var(--gold); font-style: normal; }
+
+.sp-rule {
+  display: flex; align-items: center; gap: .75rem;
+  margin: 1.2rem 0 1.1rem;
+  opacity: 0; animation: spFadeUp .85s ease 1.45s forwards;
+}
+.sp-rule span {
+  font-family: 'Cinzel', serif; font-size: .62rem;
+  letter-spacing: .28em; color: var(--gold); opacity: .65;
+}
+.sp-rule::before, .sp-rule::after {
+  content: ''; width: 56px; height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  opacity: .38;
+}
+
+.sp-verse {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 300;
+  font-size: .97rem; line-height: 1.75;
+  color: var(--txt2); text-align: center; max-width: 290px;
+  opacity: 0; animation: spFadeUp 1s ease 1.65s forwards;
+}
+.sp-verse cite {
+  display: block; margin-top: .45rem;
+  font-style: normal; font-family: 'Cinzel', serif;
+  font-size: .55rem; letter-spacing: .2em; color: var(--txt3);
+}
+
+/* ── button ── */
+.sp-btn-wrap {
+  margin-top: 2.4rem;
+  opacity: 0; animation: spFadeUp .85s ease 2.05s forwards;
+}
+.sp-btn {
+  font-family: 'Cinzel', serif;
+  font-size: .63rem; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--gold); cursor: pointer;
+  border: 1px solid rgba(201,168,76,.42); border-radius: 50px;
+  padding: .7rem 2.2rem; background: transparent;
+  transition: border-color .25s, box-shadow .25s, transform .12s;
+  position: relative; overflow: hidden;
+}
+.sp-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(201,168,76,.13); border-radius: inherit;
+  opacity: 0; transition: opacity .25s;
+}
+.sp-btn:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(201,168,76,.2); }
+.sp-btn:hover::after { opacity: 1; }
+.sp-btn:active { transform: scale(.96); }
+.sp-btn:disabled { opacity: .45; pointer-events: none; }
+
+/* ── particles ── */
+.sp-particle {
+  position: absolute; border-radius: 50%;
+  background: var(--gold); pointer-events: none;
+  animation: spFloat linear infinite; opacity: 0;
+}
+
+/* ── exit ── */
+#splash.sp-out {
+  animation: spExit .88s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+/* ── keyframes ── */
+@keyframes spFadeIn  { from { opacity:0; } to { opacity:1; } }
+@keyframes spFadeUp  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spRise    { from { opacity:0; transform:translateY(14px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes spSpin    { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+@keyframes spFloat {
+  0%   { opacity:0; transform:translateY(0) scale(1); }
+  15%  { opacity:.5; }
+  85%  { opacity:.18; }
+  100% { opacity:0; transform:translateY(-110px) scale(.45); }
+}
+@keyframes spExit {
+  0%   { opacity:1; transform:scale(1); }
+  45%  { opacity:1; transform:scale(1.013); }
+  100% { opacity:0; transform:scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #splash *, #splash *::before, #splash *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SPLASH ══ -->
+<div id="splash">
+  <!-- particles injected by JS -->
+  <div class="sp-ring">
+    <svg viewBox="0 0 168 168" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="84" cy="84" r="78" stroke="#c9a84c" stroke-width=".7"  stroke-opacity=".42"/>
+      <circle cx="84" cy="84" r="68" stroke="#c9a84c" stroke-width=".45" stroke-opacity=".2"/>
+      <!-- cardinal ticks -->
+      <line x1="84" y1="3"   x2="84" y2="13"  stroke="#c9a84c" stroke-width="1.2" stroke-opacity=".68"/>
+      <line x1="84" y1="155" x2="84" y2="165" stroke="#c9a84c" stroke-width="1.2" stroke-opacity=".68"/>
+      <line x1="3"  y1="84"  x2="13"  y2="84" stroke="#c9a84c" stroke-width="1.2" stroke-opacity=".68"/>
+      <line x1="155" y1="84" x2="165" y2="84" stroke="#c9a84c" stroke-width="1.2" stroke-opacity=".68"/>
+      <!-- 45° diamonds -->
+      <polygon points="84,18  86.2,21 84,24 81.8,21" fill="#c9a84c" opacity=".52"/>
+      <polygon points="84,144 86.2,147 84,150 81.8,147" fill="#c9a84c" opacity=".52"/>
+      <polygon points="18,84  21,81.8 24,84 21,86.2" fill="#c9a84c" opacity=".52"/>
+      <polygon points="144,84 147,81.8 150,84 147,86.2" fill="#c9a84c" opacity=".52"/>
+    </svg>
+    <div class="sp-ring-spin"></div>
+    <div class="sp-mono">
+      <div class="sp-mono-star">✦</div>
+      <div class="sp-mono-label">Salmos</div>
+    </div>
+  </div>
+
+  <h1 class="sp-title">SAL<em>MOS</em></h1>
+
+  <div class="sp-rule"><span>✦</span></div>
+
+  <p class="sp-verse">
+    "O meu socorro vem do Senhor,<br>que fez os céus e a terra."
+    <cite>Salmo 121 · v.2</cite>
+  </p>
+
+  <div class="sp-btn-wrap">
+    <button class="sp-btn" id="splashBtn" onclick="enterApp()">Entrar</button>
+  </div>
+</div><!-- /splash -->
+
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar" id="topbar">
+    <button class="topbar-back" id="topbarBack" onclick="goBack()" style="visibility:hidden">‹</button>
+    <span class="topbar-title" id="topbarTitle">✦ SALMOS</span>
+    <button class="topbar-side" id="topbarSide" onclick="toggleTheme()">◑</button>
+  </div>
+
+  <div class="screens">
+
+    <!-- ══ HOME ══ -->
+    <div class="screen" id="screen-home" data-state="active">
+      <div class="home-hero">
+        <p class="hero-eyebrow">Bíblia · Antigo Testamento</p>
+        <h1 class="hero-h1">Livro dos <em>Salmos</em></h1>
+        <p class="hero-verse">"O Senhor é o meu pastor; nada me faltará."<br><small style="opacity:.6;font-size:.85em">— Salmos 23.1</small></p>
+        <div class="hero-divider">· · ·</div>
+      </div>
+      <div class="search-bar">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="searchInput" placeholder="Buscar salmo, palavra ou frase…" autocomplete="off" inputmode="search">
+        <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+      </div>
+      <div class="recent-row" id="recentRow">
+        <span class="recent-label">Lidos recentemente</span>
+        <div id="recentChips"></div>
+      </div>
+      <div class="sec-head" id="gridHead">
+        <span class="sec-label">Selecione um salmo</span>
+        <span class="sec-count" id="gridCount"></span>
+      </div>
+      <div class="psalm-grid" id="psalmGrid"></div>
+      <div class="results-list" id="resultsList" style="display:none"></div>
+    </div>
+
+    <!-- ══ READER ══ -->
+    <div class="screen" id="screen-reader" data-state="hidden">
+      <div class="topbar" style="position:sticky;top:0;z-index:5;" id="readerTopbar">
+        <button class="topbar-back" onclick="goBack()">‹</button>
+        <span class="topbar-title" id="readerCrumb">Salmo</span>
+        <div class="reader-nav">
+          <button class="rnav" id="prevBtn" onclick="navPsalm(-1)">‹ Ant</button>
+          <button class="rnav" id="nextBtn" onclick="navPsalm(+1)">Próx ›</button>
+        </div>
+      </div>
+
+      <!-- Psalm text card -->
+      <div class="psalm-card" id="psalmCard"></div>
+
+      <!-- Bottom prev/next -->
+      <div class="psalm-nav" id="psalmNav"></div>
+
+      <!-- ── REFLEXÃO ── -->
+      <div class="section-card" id="reflectionCard">
+        <div class="sec-card-header" onclick="toggleSection('reflectionCard')">
+          <div class="sec-card-left">
+            <span class="sec-card-icon">✦</span>
+            <span class="sec-card-title">Reflexão & Comentário</span>
+          </div>
+          <span class="sec-card-chevron">▾</span>
+        </div>
+        <div class="sec-card-body">
+          <div class="ref-tabs">
+            <button class="ref-tab active" id="tabBiblica"  onclick="switchRefTab('biblica')">📖 Bíblica</button>
+            <button class="ref-tab"        id="tabCatolica" onclick="switchRefTab('catolica')">✝ Católica</button>
+          </div>
+          <div id="refBiblica"  class="ref-panel on"></div>
+          <div id="refCatolica" class="ref-panel"></div>
+        </div>
+      </div>
+
+      <!-- ── NOTAS ── -->
+      <div class="section-card" id="notesCard" style="margin-bottom:2rem">
+        <div class="sec-card-header" onclick="toggleSection('notesCard', initNotesArea)">
+          <div class="sec-card-left">
+            <span class="sec-card-icon">✎</span>
+            <span class="sec-card-title">Minhas Anotações</span>
+            <span class="sec-card-badge" id="notesBadge" style="display:none">Salvo</span>
+          </div>
+          <span class="sec-card-chevron">▾</span>
+        </div>
+        <div class="sec-card-body">
+          <textarea class="notes-area" id="notesArea"
+            placeholder="Escreva aqui sua reflexão pessoal, insights ou orações sobre este salmo…"
+            oninput="onNotesInput()"></textarea>
+          <div class="notes-footer">
+            <span class="notes-chars" id="notesChars">0 caracteres</span>
+            <div class="notes-btns">
+              <button class="notes-clear" id="notesClear" onclick="clearNote()" style="display:none">Apagar</button>
+              <button class="notes-save" id="notesSave" onclick="saveNote()">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /screen-reader -->
+
+    <!-- ══ FAVORITES ══ -->
+    <div class="screen" id="screen-fav" data-state="hidden">
+      <div id="favContent"></div>
+    </div>
+
+    <!-- ══ SETTINGS ══ -->
+    <div class="screen" id="screen-settings" data-state="hidden">
+      <div class="settings-list">
+        <div class="settings-section">
+          <div class="settings-section-label">Aparência</div>
+          <div class="setting-row" onclick="toggleTheme()">
+            <span class="setting-icon">◑</span>
+            <div class="setting-info">
+              <div class="setting-name">Modo escuro</div>
+              <div class="setting-desc">Tema escuro para leitura noturna</div>
+            </div>
+            <div class="toggle" id="darkToggle"></div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-icon">𝐀</span>
+            <div class="setting-info">
+              <div class="setting-name">Tamanho da fonte</div>
+              <div class="setting-desc">Ajuste para melhor leitura</div>
+            </div>
+            <div class="fontsize-ctrl">
+              <button class="fs-btn" onclick="changeFont(-1)">−</button>
+              <span class="fs-val" id="fsVal">M</span>
+              <button class="fs-btn" onclick="changeFont(+1)">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-label">Sobre</div>
+          <div class="setting-row">
+            <span class="setting-icon">✦</span>
+            <div class="setting-info"><div class="setting-name">Salmos</div><div class="setting-desc">O Livro das Preces · v2.0</div></div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-icon">📖</span>
+            <div class="setting-info"><div class="setting-name">Tradução</div><div class="setting-desc">Almeida Revista e Corrigida</div></div>
+          </div>
+          <div class="setting-row" onclick="clearAll()">
+            <span class="setting-icon" style="color:#e05252">🗑</span>
+            <div class="setting-info">
+              <div class="setting-name" style="color:#e05252">Limpar dados</div>
+              <div class="setting-desc">Remove histórico, favoritos e notas</div>
+            </div>
+            <span style="color:var(--txt3)">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screens -->
+
+  <!-- TAB BAR -->
+  <nav class="tabbar">
+    <button class="tab active" id="tab-home"     onclick="switchTab('home')"><span class="tab-icon">⊞</span><span class="tab-label">Início</span></button>
+    <button class="tab"        id="tab-fav"      onclick="switchTab('fav')"><span class="tab-icon">☆</span><span class="tab-label">Favoritos</span></button>
+    <button class="tab"        id="tab-settings" onclick="switchTab('settings')"><span class="tab-icon">⚙</span><span class="tab-label">Config</span></button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- SHARE SHEET -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Compartilhar Salmo</div>
+  <div class="sheet-url">
+    <input type="text" id="shareInput" readonly>
+    <button class="btn-gold" onclick="copyShare()">Copiar</button>
+  </div>
+  <button style="width:100%;padding:.6rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--txt3);font-size:.85rem;" onclick="closeSheet()">Fechar</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════
+   SPLASH
+════════════════════════════════════════════════ */
+(function() {
+  // Spawn ambient particles
+  const splash = document.getElementById('splash');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'sp-particle';
+    const sz = 1.4 + Math.random() * 2.8;
+    p.style.cssText = [
+      `width:${sz}px`, `height:${sz}px`,
+      `left:${10 + Math.random() * 80}%`,
+      `bottom:${8 + Math.random() * 22}%`,
+      `animation-duration:${7 + Math.random() * 9}s`,
+      `animation-delay:${Math.random() * 7}s`
+    ].join(';');
+    splash.prepend(p);
+  }
+})();
+
+function enterApp() {
+  const btn = document.getElementById('splashBtn');
+  btn.disabled = true;
+  const splash = document.getElementById('splash');
+  splash.classList.add('sp-out');
+  setTimeout(() => { splash.style.display = 'none'; }, 860);
+}
+
+// Auto-enter after 7 s
+setTimeout(() => {
+  const s = document.getElementById('splash');
+  if (s && !s.classList.contains('sp-out')) enterApp();
+}, 7000);
+
+/* ════════════════════════════════════════════════
+   DATA
+════════════════════════════════════════════════ */
+const PSALMS = [
+  {
+    num: 1,
+    title: "O Caminho dos Justos",
+    verses: [
+      "Bem-aventurado o homem que não anda segundo o conselho dos ímpios, nem se detém no caminho dos pecadores, nem se assenta na roda dos escarnecedores.",
+      "Antes, o seu prazer está na lei do Senhor, e na sua lei medita de dia e de noite.",
+      "Ele é como a árvore plantada junto a ribeiros de águas, a qual dá o seu fruto no tempo certo, e cujas folhas não caem; e tudo quanto fizer prosperará.",
+      "Não são assim os ímpios; mas são como a palha que o vento dispersa.",
+      "Por isso não subsistirão os ímpios no juízo, nem os pecadores na congregação dos justos.",
+      "Porque o Senhor conhece o caminho dos justos, mas o caminho dos ímpios perecerá.",
+    ],
+    reflection: {
+      biblica: `<p><strong>Contexto e gênero literário.</strong> O Salmo 1 funciona como pórtico de entrada para todo o Saltério, apresentando dois caminhos que definem a existência humana: o caminho da justiça e o da impiedade. É um salmo sapiencial, próximo à tradição dos livros de Provérbios e Jó, que convida o leitor à meditação constante da Palavra.</p>
+<div class="ref-quote">"O seu prazer está na lei do Senhor, e na sua lei medita de dia e de noite." — v. 2</div>
+<p>A palavra hebraica <em>Torah</em> (lei) não designa apenas regras, mas toda a instrução e revelação de Deus. <strong>Meditar</strong> nessa Torah — dia e noite — é o segredo do homem bem-aventurado. A imagem da árvore plantada junto às águas é uma das mais belas metáforas bíblicas: não importa a estação, suas raízes encontram sustento.</p>
+<p>Em contraste, o ímpio é comparado à palha — leve, sem raiz, levada por qualquer vento. O salmo nos convida a examinar: em que solo estamos plantados? As nossas escolhas diárias moldam nosso caráter. <em>Feliz é quem encontra alegria na Palavra e deixa que ela o nutra de dentro para fora.</em></p>`,
+
+      catolica: `<p><strong>Tradição patrística e litúrgica.</strong> Os Padres da Igreja, como Santo Agostinho em suas <em>Enarrationes in Psalmos</em>, identificaram o "homem bem-aventurado" do versículo 1 com o próprio Cristo, o único que caminhou perfeitamente longe do pecado. Assim, o Salmo 1 é ao mesmo tempo um retrato de Jesus e uma vocação para o batizado.</p>
+<div class="ref-quote">"Ele é como a árvore plantada junto a ribeiros de águas." — v. 3</div>
+<p>O Catecismo da Igreja Católica (§ 2585) apresenta os Salmos como a "<em>escola de oração</em>" do povo de Deus. Meditar a Lei — que para o cristão se plenifica no Evangelho — é nutrir a alma com o alimento que não perece. A <strong>Lectio Divina</strong>, prática monástica contemplativa, tem nesse salmo um de seus fundamentos: ler, meditar, orar e contemplar.</p>
+<p>A Igreja ora este salmo nas Vésperas, reconhecendo que o fruto que "não cai" é sinal da graça permanente que Deus oferece àqueles que se mantêm unidos a Ele, como ramos na videira (Jo 15,5). <em>Que cada leitura da Escritura nos plante mais fundo nas águas vivas da vida divina.</em></p>`
+    }
+  },
+  {
+    num: 23,
+    title: "O Senhor é o Meu Pastor",
+    note: "Salmo de Davi.",
+    verses: [
+      "O Senhor é o meu pastor; nada me faltará.",
+      "Ele me faz repousar em pastos verdejantes. Leva-me para junto das águas tranquilas.",
+      "Refrigera a minha alma; guia-me pelas veredas da justiça, por amor do seu nome.",
+      "Ainda que eu ande pelo vale da sombra da morte, não temerei mal algum, porque tu estás comigo; o teu bordão e o teu cajado me consolam.",
+      "Preparas uma mesa perante mim na presença dos meus adversários; unges a minha cabeça com óleo; o meu cálice transborda.",
+      "Certamente que a bondade e a misericórdia me seguirão todos os dias da minha vida; e habitarei na casa do Senhor por longos dias.",
+    ],
+    reflection: {
+      biblica: `<p><strong>O salmo mais amado da Bíblia.</strong> O Salmo 23 foi escrito por Davi — ele mesmo um pastor antes de ser rei. Essa experiência pessoal dá ao texto uma autenticidade extraordinária: Davi sabia o que era guiar ovelhas por terrenos áridos, protegê-las de predadores e conduzi-las à água. E reconheceu que Deus fazia exatamente isso por ele.</p>
+<div class="ref-quote">"Ainda que eu ande pelo vale da sombra da morte, não temerei mal algum, porque tu estás comigo." — v. 4</div>
+<p>O salmo tem dois movimentos: nos versículos 1–4, Davi fala <em>sobre</em> Deus ("Ele me faz... Ele me leva..."). No versículo 4, a linguagem muda: <strong>"porque tu estás comigo"</strong> — agora é uma conversa direta, íntima. No momento mais escuro, Davi não fala sobre Deus, ele fala com Deus.</p>
+<p>O cajado afasta os predadores; o bordão serve de apoio nas subidas íngremes. Ambos são símbolos da presença ativa de Deus em nossas dificuldades. <em>A bondade e a misericórdia que nos seguem não são acidentais — são a promessa de um Pai que nunca abandona seus filhos.</em></p>`,
+
+      catolica: `<p><strong>Cristo, o Bom Pastor.</strong> A Igreja lê o Salmo 23 à luz de João 10,11: <em>"Eu sou o bom pastor; o bom pastor dá a sua vida pelas ovelhas."</em> Jesus não apenas guia — Ele dá a própria vida. Por isso, este salmo é cantado especialmente durante o Tempo Pascal, quando a Igreja celebra a Ressurreição do Pastor que desceu ao "vale da sombra da morte" e ressuscitou.</p>
+<div class="ref-quote">"Preparas uma mesa perante mim na presença dos meus adversários." — v. 5</div>
+<p>Os Padres da Igreja viam nessa "mesa" a <strong>Eucaristia</strong> — o banquete que Cristo prepara para seus discípulos mesmo em meio às provações do mundo. A unção com óleo evoca o Batismo e a Crisma, sacramentos pelos quais o fiel é marcado pelo Espírito Santo. O "cálice que transborda" ressoa no cálice eucarístico da Última Ceia.</p>
+<p>Na tradição católica, este salmo acompanha os moribundos: é orado na Unção dos Enfermos e nas exéquias, pois <em>"habitar na casa do Senhor por longos dias"</em> aponta para a vida eterna — a morada definitiva que aguarda quem seguiu o Pastor fiel.</p>`
+    }
+  },
+  {
+    num: 91,
+    title: "A Segurança do Que Confia em Deus",
+    verses: [
+      "Aquele que habita no esconderijo do Altíssimo, e descansa à sombra do Onipotente,",
+      "dirá ao Senhor: Refugio meu e fortaleza minha; Deus meu, em quem confio.",
+      "Pois ele te livrará do laço do passarinheiro, e da peste perniciosa.",
+      "Com as suas penas te cobrirá, e sob as suas asas te abrigarás; a sua verdade é escudo e broquel.",
+      "Não te atemorizarás do terror noturno, nem da seta que voa de dia,",
+      "nem da pestilência que anda na escuridão, nem da destruição que devasta ao meio-dia.",
+      "Mil cairão ao teu lado, e dez mil à tua direita; mas não chegará a ti.",
+      "Somente com os teus olhos olharás, e verás o galardão dos ímpios.",
+      "Porque fizeste do Senhor o teu refúgio, e do Altíssimo a tua habitação,",
+      "não te sobrevirá o mal, nem praga alguma chegará à tua tenda.",
+      "Pois ele dará ordens aos seus anjos a teu respeito, para que te guardem em todos os teus caminhos.",
+      "Eles te sustentarão nas suas mãos, para que não tropeces em alguma pedra.",
+      "Pisarás o leão e a víbora; calcará aos pés o leãozinho e a serpente.",
+      "Pois está unido a mim no amor; portanto o livrarei; pô-lo-ei em segurança, pois conhece o meu nome.",
+      "Ele me invocará, e eu lhe responderei; estarei com ele na angústia; livra-lo-ei e o glorificarei.",
+      "Saciá-lo-ei com longa vida e lhe mostrarei a minha salvação.",
+    ],
+    reflection: {
+      biblica: `<p><strong>Um salmo de proteção divina absoluta.</strong> O Salmo 91 é uma das declarações mais ousadas de confiança em Deus que a Bíblia contém. Utiliza quatro nomes divinos logo de início — Altíssimo, Onipotente, Senhor e Deus — como se acumulasse toda a riqueza da identidade de Deus para fundamentar a segurança do crente.</p>
+<div class="ref-quote">"Com as suas penas te cobrirá, e sob as suas asas te abrigarás." — v. 4</div>
+<p>A imagem da águia cobrindo seus filhotes com as asas é recorrente nas Escrituras (Dt 32,11; Mt 23,37). Ela fala de um Deus que não é distante e abstrato, mas que se posiciona como escudo entre nós e o perigo. <strong>O "esconderijo do Altíssimo"</strong> (v.1) não é fuga da realidade — é a posição de quem aprendeu a se manter próximo de Deus no meio da vida real.</p>
+<p>O versículo 11 — "<em>Ele dará ordens aos seus anjos a teu respeito</em>" — é citado pelo próprio diabo na tentação de Jesus (Mt 4,6), prova de que até os adversários reconhecem a força desta promessa. Jesus, porém, não testou o Pai; Ele confiou. <em>A diferença entre a fé genuína e a presunção é exatamente essa: o crente descansa nas promessas, não as usa como teste para Deus.</em></p>`,
+
+      catolica: `<p><strong>O salmo das horas difíceis.</strong> A tradição espiritual católica considera o Salmo 91 um dos mais poderosos para a proteção espiritual. É rezado nas Completas — a última oração do dia antes do sono — como entrega confiante nas mãos de Deus ao fim de cada jornada.</p>
+<div class="ref-quote">"Estarei com ele na angústia; livra-lo-ei e o glorificarei." — v. 15</div>
+<p>São Tomás de Aquino, ao comentar este salmo, destacou que a proteção prometida não é isenção de todo sofrimento, mas a <strong>presença transformadora de Deus</strong> no meio do sofrimento. O crente não é poupado da "pestilência" — ele é sustentado através dela. Essa distinção é teologicamente crucial: Deus não elimina sempre a cruz, mas Ele está sempre na cruz conosco.</p>
+<p>A devoção aos <strong>Anjos da Guarda</strong>, celebrada em 2 de outubro, tem seu fundamento bíblico precisamente neste salmo (v.11–12). A Igreja ensina que cada batizado recebe um anjo custodio como sinal concreto do cuidado providencial de Deus. <em>Habitar "no esconderijo do Altíssimo" é outro modo de dizer: permanecer em estado de graça, unidos a Cristo, nossa verdadeira fortaleza.</em></p>`
+    }
+  },
+  {
+    num: 121,
+    title: "O Senhor, Guarda de Israel",
+    note: "Cântico dos Degraus.",
+    verses: [
+      "Levanto os meus olhos para os montes; de onde me virá o socorro?",
+      "O meu socorro vem do Senhor, que fez os céus e a terra.",
+      "Não deixará vacilar o teu pé; aquele que te guarda não dormitará.",
+      "Eis que não dormitará nem dormirá o guarda de Israel.",
+      "O Senhor é o teu guarda; o Senhor é a tua sombra à tua mão direita.",
+      "O sol não te molestará de dia, nem a lua de noite.",
+      "O Senhor te guardará de todo o mal; ele guardará a tua alma.",
+      "O Senhor guardará a tua entrada e a tua saída, desde agora e para sempre.",
+    ],
+    reflection: {
+      biblica: `<p><strong>Os Cânticos dos Degraus.</strong> O Salmo 121 integra uma coleção de 15 salmos (120–134) chamados "Cânticos das Subidas" ou "dos Degraus", cantados pelos peregrinos que subiam a Jerusalém para as grandes festas. A caminhada era longa, os caminhos perigosos — e este salmo nasce exatamente desse contexto de vulnerabilidade e dependência.</p>
+<div class="ref-quote">"Levanto os meus olhos para os montes; de onde me virá o socorro?" — v. 1</div>
+<p>A pergunta do primeiro versículo não é desespero — é o início da oração. O olhar se eleva primeiro aos montes (símbolo de poder e majestade), mas a resposta é clara: o verdadeiro socorro vem do <strong>Criador dos próprios montes</strong>. Nenhuma grandeza criada pode rivalizar com Aquele que fez o céu e a terra.</p>
+<p>A repetição do verbo <em>guardar</em> seis vezes em apenas oito versículos não é acidente literário — é um martelo que crava na consciência a mesma verdade: você está guardado. Na saída e na entrada, no sol e na lua, agora e para sempre. <em>Que esta promessa ressoe cada vez que levantarmos os olhos em busca de socorro.</em></p>`,
+
+      catolica: `<p><strong>A peregrinação como símbolo da vida cristã.</strong> A Igreja sempre viu na peregrinação a Jerusalem uma imagem da jornada da alma rumo à Jerusalém celestial. O Salmo 121, cantado no caminho, torna-se então oração de todo cristão que atravessa o "vale de lágrimas" (como diz o Salve Rainha) em direção à pátria definitiva.</p>
+<div class="ref-quote">"O Senhor guardará a tua entrada e a tua saída, desde agora e para sempre." — v. 8</div>
+<p>O Concílio Vaticano II, na constituição <em>Lumen Gentium</em>, descreve a Igreja como "povo de Deus em caminho". Esse caminho tem guardião: não dormita, não se distrai, não abandona o peregrino. Em contraste com os ídolos do salmo 115 — que têm olhos mas não veem — <strong>o Deus de Israel está perpetuamente vigilante</strong>.</p>
+<p>Na espiritualidade ignaciana, este salmo inspira o exame de consciência diário: ao fim do dia, o crente contempla como Deus guardou sua "entrada e saída" naquelas 24 horas. <em>Perceber o cuidado de Deus nos pequenos detalhes da vida ordinária é o início de uma profunda gratidão contemplativa.</em></p>`
+    }
+  },
+  {
+    num: 150,
+    title: "Aleluia — Louvai ao Senhor",
+    verses: [
+      "Louvai a Deus no seu santuário; louvai-o no firmamento do seu poder.",
+      "Louvai-o pelos seus poderosos feitos; louvai-o conforme a sua excelente grandeza.",
+      "Louvai-o com o tocar da trombeta; louvai-o com o saltério e a harpa.",
+      "Louvai-o com o tamborim e a dança; louvai-o com instrumentos de cordas e com órgão.",
+      "Louvai-o com os címbalos sonoros; louvai-o com os címbalos de alarido.",
+      "Todo ser que respira louve ao Senhor! Aleluia!",
+    ],
+    reflection: {
+      biblica: `<p><strong>A grande doxologia final.</strong> O Salmo 150 é o ponto de chegada de toda a jornada espiritual do Saltério. Se o Salmo 1 nos convida a meditar, o Salmo 150 nos convida a explodir em louvor. Os 149 salmos anteriores — com suas lágrimas, lamentos, confissões e súplicas — desembocam aqui numa cascata de <em>Aleluia</em> (em hebraico: <em>hallelu Yah</em> — "louvai a Yahweh").</p>
+<div class="ref-quote">"Todo ser que respira louve ao Senhor! Aleluia!" — v. 6</div>
+<p>O salmo responde três perguntas implícitas: <strong>Onde louvar?</strong> No santuário e no firmamento — em todo lugar. <strong>Por quê louvar?</strong> Pelos feitos poderosos e pela grandeza de Deus. <strong>Como louvar?</strong> Com todos os instrumentos existentes — trombeta, saltério, harpa, tamborim, dança, cordas, órgão, címbalos. Nada é excluído.</p>
+<p>A última palavra é de alcance cósmico: <em>todo ser que respira</em>. O louvor não é monopólio de nenhuma nação, cultura ou instrumento. Toda criatura que recebeu o fôlego da vida tem uma única destinação: <em>glorificar Aquele que soprou esse fôlego. O Saltério termina como deve terminar toda vida: em adoração.</em></p>`,
+
+      catolica: `<p><strong>Culminância da oração da Igreja.</strong> A Liturgia das Horas encerra cada semana com o Salmo 150 no Ofício das Leituras do domingo — um sinal de que todo o tempo litúrgico converge para o louvor. A Missa dominical é esse "santuário" onde a Igreja terrena se une à liturgia celestial descrita no Apocalipse (Ap 5,11–14).</p>
+<div class="ref-quote">"Louvai-o com o tamborim e a dança; louvai-o com instrumentos de cordas." — v. 4</div>
+<p>São João Paulo II, no documento <em>Novo Millennio Ineunte</em>, afirmou que a contemplação do rosto de Cristo deve transbordar em <strong>louvor e missão</strong>. O Salmo 150 não é fuga do mundo — é a transformação do mundo pelo louvor. A arte sacra, a música litúrgica, a dança das culturas africanas e latinas na celebração eucarística: tudo encontra aqui sua legitimação bíblica.</p>
+<p>O versículo final — "<em>todo ser que respira</em>" — ecoa a visão católica da criação: nada do que existe é indiferente a Deus. A doutrina da <strong>encarnação</strong> santifica a matéria; a doutrina da <strong>ressurreição</strong> santifica o corpo. Respirar, em última análise, é um ato litúrgico. <em>Que cada inspiração seja uma oração muda e cada expiração, um Aleluia silencioso.</em></p>`
+    }
+  },
+];
+
+const AVAIL = new Set(PSALMS.map(p => p.num));
+
+/* ════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════ */
+let favorites  = JSON.parse(localStorage.getItem('s_fav')   || '[]');
+let history    = JSON.parse(localStorage.getItem('s_hist')  || '[]');
+let notes      = JSON.parse(localStorage.getItem('s_notes') || '{}');
+let currentNum = null;
+let activeTab  = 'home';
+let screenStack = ['home'];
+let searchQ    = '';
+let fontSize   = parseInt(localStorage.getItem('s_fs') || '1');
+let refTab     = 'biblica';
+let notesDirty = false;
+let notesTimer = null;
+
+const FS_LABELS = ['P', 'M', 'G', 'XG'];
+const FS_CSS    = ['.82rem', '.9rem', '.97rem', '1.08rem'];
+
+/* ════════════════════════════════════════════════
+   THEME
+════════════════════════════════════════════════ */
+(function initTheme() {
+  const t = localStorage.getItem('s_theme') ||
+    (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+  applyTheme(t);
+})();
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('s_theme', t);
+  const d = document.getElementById('darkToggle');
+  if (d) d.className = 'toggle' + (t === 'dark' ? ' on' : '');
+  document.getElementById('topbarSide').textContent = t === 'dark' ? '○' : '◑';
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+/* ════════════════════════════════════════════════
+   FONT SIZE
+════════════════════════════════════════════════ */
+function applyFontSize() {
+  const idx = Math.max(0, Math.min(3, fontSize + 1));
+  document.querySelectorAll('.vtext').forEach(el => el.style.fontSize = FS_CSS[idx]);
+  const lbl = document.getElementById('fsVal');
+  if (lbl) lbl.textContent = FS_LABELS[idx];
+}
+function changeFont(d) {
+  fontSize = Math.max(-1, Math.min(2, fontSize + d));
+  localStorage.setItem('s_fs', fontSize);
+  applyFontSize();
+}
+
+/* ════════════════════════════════════════════════
+   GRID
+════════════════════════════════════════════════ */
+function buildGrid() {
+  const g = document.getElementById('psalmGrid');
+  g.innerHTML = '';
+  document.getElementById('gridCount').textContent = `${AVAIL.size} disponíveis`;
+  for (let i = 1; i <= 150; i++) {
+    const el = document.createElement('div');
+    if (AVAIL.has(i)) {
+      el.className = 'pgn avail';
+      el.title = `Salmo ${i}`;
+      el.onclick = () => openPsalm(i);
+    } else {
+      el.className = 'pgn none';
+    }
+    el.textContent = i;
+    g.appendChild(el);
+  }
+}
+
+/* ════════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════════ */
+function showScreen(id, push = true) {
+  const current = screenStack[screenStack.length - 1];
+  document.querySelectorAll('.screen').forEach(s => {
+    const sId = s.id.replace('screen-', '');
+    if (sId === id)      s.dataset.state = 'active';
+    else if (sId === current && push) s.dataset.state = 'behind';
+    else                 s.dataset.state = 'ahead';
+  });
+  if (push && id !== current) screenStack.push(id);
+  updateTopbar(id);
+}
+
+function goBack() {
+  if (screenStack.length <= 1) return;
+  screenStack.pop();
+  const prev = screenStack[screenStack.length - 1];
+  document.querySelectorAll('.screen').forEach(s => {
+    s.dataset.state = s.id.replace('screen-', '') === prev ? 'active' : 'ahead';
+  });
+  currentNum = null;
+  updateTopbar(prev);
+}
+
+function updateTopbar(screenId) {
+  const isRoot = screenStack.length <= 1;
+  document.getElementById('topbarBack').style.visibility = isRoot ? 'hidden' : 'visible';
+  const titles = { home: '✦ SALMOS', fav: 'Favoritos', settings: 'Configurações' };
+  const title = document.getElementById('topbarTitle');
+  title.textContent = titles[screenId] || '';
+  title.style.display = screenId === 'reader' ? 'none' : '';
+  document.getElementById('topbarSide').textContent =
+    document.documentElement.getAttribute('data-theme') === 'dark' ? '○' : '◑';
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  screenStack = [tab];
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => {
+    s.dataset.state = s.id.replace('screen-', '') === tab ? 'active' : 'ahead';
+  });
+  currentNum = null;
+  updateTopbar(tab);
+  if (tab === 'fav') renderFavScreen();
+  if (tab === 'settings') {
+    applyFontSize();
+    const d = document.getElementById('darkToggle');
+    if (d) d.className = 'toggle' + (document.documentElement.getAttribute('data-theme') === 'dark' ? ' on' : '');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   OPEN PSALM
+════════════════════════════════════════════════ */
+function openPsalm(num) {
+  const psalm = PSALMS.find(p => p.num === num);
+  if (!psalm) return;
+  currentNum = num;
+  addToHistory(num);
+
+  // Reset accordion states
+  document.getElementById('reflectionCard').classList.remove('open');
+  document.getElementById('notesCard').classList.remove('open');
+  refTab = 'biblica';
+
+  renderPsalm(psalm);
+  showScreen('reader');
+
+  // Keep home tab active visually
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-home').classList.add('active');
+  activeTab = 'home';
+}
+
+function renderPsalm(psalm) {
+  const isFav = favorites.includes(psalm.num);
+  const idx   = PSALMS.findIndex(p => p.num === psalm.num);
+  const prev  = PSALMS[idx - 1];
+  const next  = PSALMS[idx + 1];
+  const fsIdx = Math.max(0, Math.min(3, fontSize + 1));
+
+  document.getElementById('readerCrumb').textContent = `Salmo ${psalm.num}`;
+  document.getElementById('prevBtn').disabled = !prev;
+  document.getElementById('nextBtn').disabled = !next;
+
+  // Psalm card
+  const versesHTML = psalm.verses.map((v, i) => `
+    <div class="verse">
+      <span class="vnum">${i+1}</span>
+      <span class="vtext" style="font-size:${FS_CSS[fsIdx]}">${hl(v)}</span>
+    </div>`).join('');
+
+  document.getElementById('psalmCard').innerHTML = `
+    <div class="psalm-num-big">${psalm.num}</div>
+    <div class="psalm-title">${psalm.title}</div>
+    ${psalm.note ? `<div class="psalm-note">${psalm.note}</div>` : ''}
+    <div class="psalm-divider"></div>
+    <div>${versesHTML}</div>
+    <div class="psalm-acts">
+      <button class="pact ${isFav ? 'fav-on' : ''}" id="favPsalmBtn" onclick="toggleFav(${psalm.num})">
+        ${isFav ? '★' : '☆'} ${isFav ? 'Favoritado' : 'Favoritar'}
+      </button>
+      <button class="pact" onclick="openShare(${psalm.num})">↗ Partilhar</button>
+      <button class="pact" onclick="openRandom()">⚄ Aleatório</button>
+    </div>`;
+
+  // Bottom nav
+  document.getElementById('psalmNav').innerHTML = `
+    ${prev ? `<button class="pnav-btn" onclick="openPsalm(${prev.num})">‹ Salmo ${prev.num}</button>` : '<span></span>'}
+    <span class="pnav-dots">· · ·</span>
+    ${next ? `<button class="pnav-btn" onclick="openPsalm(${next.num})">Salmo ${next.num} ›</button>` : '<span></span>'}`;
+
+  // Load reflections into hidden panels (instant, no loading)
+  renderReflection(psalm);
+
+  // Notes
+  loadNote(psalm.num);
+}
+
+function navPsalm(dir) {
+  const idx = PSALMS.findIndex(p => p.num === currentNum);
+  const t = PSALMS[idx + dir];
+  if (t) openPsalm(t.num);
+}
+
+/* ════════════════════════════════════════════════
+   REFLECTIONS (pre-written, instant)
+════════════════════════════════════════════════ */
+function renderReflection(psalm) {
+  const r = psalm.reflection;
+
+  document.getElementById('refBiblica').innerHTML = r?.biblica
+    ? `<div class="ref-tradition-label">Perspectiva Bíblica</div><div class="ref-text">${r.biblica}</div>`
+    : `<p style="color:var(--txt3);font-style:italic;font-size:.88rem">Reflexão não disponível para este salmo.</p>`;
+
+  document.getElementById('refCatolica').innerHTML = r?.catolica
+    ? `<div class="ref-tradition-label">Perspectiva Católica</div><div class="ref-text">${r.catolica}</div>`
+    : `<p style="color:var(--txt3);font-style:italic;font-size:.88rem">Reflexão não disponível para este salmo.</p>`;
+}
+
+function switchRefTab(tab) {
+  refTab = tab;
+  document.getElementById('tabBiblica').classList.toggle('active', tab === 'biblica');
+  document.getElementById('tabCatolica').classList.toggle('active', tab === 'catolica');
+  document.getElementById('refBiblica').classList.toggle('on', tab === 'biblica');
+  document.getElementById('refCatolica').classList.toggle('on', tab === 'catolica');
+}
+
+/* ════════════════════════════════════════════════
+   ACCORDION
+════════════════════════════════════════════════ */
+function toggleSection(cardId, onOpen) {
+  const card = document.getElementById(cardId);
+  const wasOpen = card.classList.contains('open');
+  card.classList.toggle('open');
+  if (!wasOpen && onOpen) onOpen();
+}
+
+/* ════════════════════════════════════════════════
+   NOTES
+════════════════════════════════════════════════ */
+function initNotesArea() {
+  loadNote(currentNum);
+}
+
+function loadNote(num) {
+  const area  = document.getElementById('notesArea');
+  const badge = document.getElementById('notesBadge');
+  const text  = notes[num] || '';
+  area.value  = text;
+  notesDirty  = false;
+  updateNotesUI(text, false);
+  if (badge) badge.style.display = text ? '' : 'none';
+}
+
+function onNotesInput() {
+  notesDirty = true;
+  const text = document.getElementById('notesArea').value;
+  updateNotesUI(text, true);
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(() => saveNote(true), 1800);
+}
+
+function updateNotesUI(text, dirty) {
+  const chars = document.getElementById('notesChars');
+  const save  = document.getElementById('notesSave');
+  const clear = document.getElementById('notesClear');
+  if (chars) chars.textContent = `${text.length} caractere${text.length !== 1 ? 's' : ''}`;
+  if (clear) clear.style.display = text.length ? '' : 'none';
+  if (save) {
+    save.className = dirty ? 'notes-save' : 'notes-save saved';
+    save.innerHTML = dirty ? '💾 Salvar' : '✓ Salvo';
+  }
+}
+
+function saveNote(auto = false) {
+  const text = document.getElementById('notesArea').value.trim();
+  if (text) notes[currentNum] = text;
+  else      delete notes[currentNum];
+  localStorage.setItem('s_notes', JSON.stringify(notes));
+  notesDirty = false;
+  const badge = document.getElementById('notesBadge');
+  if (badge) { badge.style.display = text ? '' : 'none'; }
+  updateNotesUI(document.getElementById('notesArea').value, false);
+  if (!auto) showToast('Anotação salva ✓');
+}
+
+function clearNote() {
+  const area = document.getElementById('notesArea');
+  if (!area.value) return;
+  if (!confirm('Apagar esta anotação?')) return;
+  area.value = '';
+  delete notes[currentNum];
+  localStorage.setItem('s_notes', JSON.stringify(notes));
+  const badge = document.getElementById('notesBadge');
+  if (badge) badge.style.display = 'none';
+  updateNotesUI('', false);
+  showToast('Anotação apagada');
+}
+
+/* ════════════════════════════════════════════════
+   SEARCH
+════════════════════════════════════════════════ */
+function hl(text) {
+  if (!searchQ || searchQ.length < 2) return text;
+  return text.replace(new RegExp(`(${searchQ.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>');
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  searchQ = '';
+  document.getElementById('searchClear').classList.remove('on');
+  document.getElementById('psalmGrid').style.display = '';
+  document.getElementById('resultsList').style.display = 'none';
+  document.getElementById('gridHead').style.display = '';
+}
+
+(function initSearch() {
+  const inp = document.getElementById('searchInput');
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim();
+    searchQ = q;
+    document.getElementById('searchClear').classList.toggle('on', q.length > 0);
+    if (q.length < 2) { clearSearch(); inp.value = q; return; }
+
+    document.getElementById('psalmGrid').style.display = 'none';
+    document.getElementById('gridHead').style.display = 'none';
+    const rl = document.getElementById('resultsList');
+    rl.style.display = '';
+
+    const matches = [];
+    const numQ = parseInt(q);
+    if (!isNaN(numQ) && AVAIL.has(numQ)) {
+      const ps = PSALMS.find(p => p.num === numQ);
+      if (ps) matches.push({ psalm: ps, vi: null, text: ps.verses[0] });
+    }
+    PSALMS.forEach(psalm => {
+      psalm.verses.forEach((v, vi) => {
+        if (v.toLowerCase().includes(q.toLowerCase()) && matches.length < 12) {
+          if (!matches.find(m => m.psalm.num === psalm.num))
+            matches.push({ psalm, vi, text: v });
+        }
+      });
+    });
+
+    if (!matches.length) {
+      rl.innerHTML = `<div class="res-none">Nenhum resultado para "<em>${q}</em>"</div>`;
+    } else {
+      const re = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      rl.innerHTML = matches.map(m => `
+        <div class="res-item" onclick="openPsalm(${m.psalm.num}); clearSearch()">
+          <div class="res-num">Salmo ${m.psalm.num}${m.vi !== null ? ` · v.${m.vi+1}` : ''}</div>
+          <div class="res-preview">${m.text.replace(new RegExp(`(${re})`, 'gi'), '<mark>$1</mark>')}</div>
+        </div>`).join('');
+    }
+  });
+})();
+
+/* ════════════════════════════════════════════════
+   HISTORY
+════════════════════════════════════════════════ */
+function addToHistory(num) {
+  history = [num, ...history.filter(n => n !== num)].slice(0, 8);
+  localStorage.setItem('s_hist', JSON.stringify(history));
+  renderRecent();
+}
+function renderRecent() {
+  const row = document.getElementById('recentRow');
+  const chips = document.getElementById('recentChips');
+  if (!history.length) { row.classList.remove('on'); return; }
+  row.classList.add('on');
+  chips.innerHTML = history.map(n =>
+    `<span class="r-chip" onclick="openPsalm(${n})">Salmo ${n}</span>`).join('');
+}
+
+/* ════════════════════════════════════════════════
+   RANDOM
+════════════════════════════════════════════════ */
+function openRandom() {
+  const arr = [...AVAIL];
+  const num = arr[Math.floor(Math.random() * arr.length)];
+  openPsalm(num);
+  showToast(`✦ Salmo ${num}`);
+}
+
+/* ════════════════════════════════════════════════
+   FAVORITES
+════════════════════════════════════════════════ */
+function toggleFav(num) {
+  if (favorites.includes(num)) {
+    favorites = favorites.filter(n => n !== num);
+    showToast('Removido dos favoritos');
+  } else {
+    favorites.push(num);
+    showToast('Adicionado aos favoritos ★');
+  }
+  localStorage.setItem('s_fav', JSON.stringify(favorites));
+  document.getElementById('tab-fav').querySelector('.tab-icon').textContent =
+    favorites.length ? '★' : '☆';
+  const psalm = PSALMS.find(p => p.num === num);
+  if (psalm && currentNum === num) renderPsalm(psalm);
+}
+
+function renderFavScreen() {
+  const c = document.getElementById('favContent');
+  if (!favorites.length) {
+    c.innerHTML = `<div class="fav-empty"><div class="fav-empty-icon">☆</div><div class="fav-empty-txt">Nenhum salmo favoritado ainda.<br>Abra um salmo e toque em <strong>Favoritar</strong>.</div></div>`;
+    return;
+  }
+  c.innerHTML = `<div class="fav-list">` + favorites.map(n => {
+    const ps = PSALMS.find(p => p.num === n);
+    const title = ps ? ps.title : `Salmo ${n}`;
+    return `<div class="fav-item" onclick="openPsalm(${n})">
+      <span class="fav-icon">★</span>
+      <div class="fav-info">
+        <div class="fav-name">Salmo ${n} — ${title}</div>
+        ${ps ? `<div class="fav-sub">${ps.verses.length} versículos${notes[n] ? ' · 📝 Com anotação' : ''}</div>` : ''}
+      </div>
+      <button class="fav-rm" onclick="event.stopPropagation();removeFav(${n})">✕</button>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function removeFav(num) {
+  favorites = favorites.filter(n => n !== num);
+  localStorage.setItem('s_fav', JSON.stringify(favorites));
+  document.getElementById('tab-fav').querySelector('.tab-icon').textContent =
+    favorites.length ? '★' : '☆';
+  renderFavScreen();
+  showToast('Removido dos favoritos');
+}
+
+/* ════════════════════════════════════════════════
+   SHARE
+════════════════════════════════════════════════ */
+function openShare(num) {
+  document.getElementById('shareInput').value = `${location.origin}${location.pathname}?s=${num}`;
+  document.getElementById('sheetOverlay').classList.add('on');
+  document.getElementById('sheet').classList.add('on');
+}
+function closeSheet() {
+  document.getElementById('sheetOverlay').classList.remove('on');
+  document.getElementById('sheet').classList.remove('on');
+}
+function copyShare() {
+  const v = document.getElementById('shareInput').value;
+  navigator.clipboard.writeText(v).catch(() => { document.getElementById('shareInput').select(); document.execCommand('copy'); });
+  closeSheet(); showToast('Link copiado! ✓');
+}
+
+/* ════════════════════════════════════════════════
+   SETTINGS
+════════════════════════════════════════════════ */
+function clearAll() {
+  if (!confirm('Limpar todo o histórico, favoritos e anotações?')) return;
+  favorites = []; history = []; notes = {};
+  localStorage.removeItem('s_fav');
+  localStorage.removeItem('s_hist');
+  localStorage.removeItem('s_notes');
+  renderRecent(); renderFavScreen();
+  document.getElementById('tab-fav').querySelector('.tab-icon').textContent = '☆';
+  showToast('Dados limpos');
+}
+
+/* ════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('on'), 2400);
+}
+
+/* ════════════════════════════════════════════════
+   DEEP LINK
+════════════════════════════════════════════════ */
+(function() {
+  const p = new URLSearchParams(location.search).get('s');
+  if (p && AVAIL.has(+p)) openPsalm(+p);
+})();
+
+/* ════════════════════════════════════════════════
+   SWIPE BACK
+════════════════════════════════════════════════ */
+(function() {
+  let sx = 0, sy = 0;
+  document.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = Math.abs(e.changedTouches[0].clientY - sy);
+    if (sx < 40 && dx > 60 && dy < 80) goBack();
+  }, { passive: true });
+})();
+
+/* ════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════ */
+buildGrid();
+renderRecent();
+applyFontSize();
+</script>
+</body>
+</html>
